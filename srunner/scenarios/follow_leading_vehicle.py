@@ -21,13 +21,15 @@ import random
 import py_trees
 
 import carla
-
+from agents.navigation.local_planner import RoadOption
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.scenariomanager.scenarioatomics.atomic_behaviors import (ActorTransformSetter,
                                                                       ActorDestroy,
                                                                       KeepVelocity,
                                                                       StopVehicle,
-                                                                      WaypointFollower)
+                                                                      WaypointFollower,
+                                                                      LaneChange,
+                                                                      BasicAgentBehavior)
 from srunner.scenariomanager.scenarioatomics.atomic_criteria import CollisionTest
 from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (InTriggerDistanceToVehicle,
                                                                                InTriggerDistanceToNextIntersection,
@@ -35,7 +37,7 @@ from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (I
                                                                                StandStill)
 from srunner.scenariomanager.timer import TimeOut
 from srunner.scenarios.basic_scenario import BasicScenario
-from srunner.tools.scenario_helper import get_waypoint_in_distance
+from srunner.tools.scenario_helper import get_waypoint_in_distance, generate_target_waypoint, generate_target_waypoint_list 
 
 
 class FollowLeadingVehicle(BasicScenario):
@@ -62,7 +64,7 @@ class FollowLeadingVehicle(BasicScenario):
         self._first_vehicle_speed = 10
         self._reference_waypoint = self._map.get_waypoint(config.trigger_points[0].location)
         self._other_actor_max_brake = 1.0
-        self._other_actor_stop_in_front_intersection = 20
+        self._other_actor_stop_in_front_intersection = 0
         self._other_actor_transform = None
         # Timeout of scenario in seconds
         self.timeout = timeout
@@ -128,8 +130,10 @@ class FollowLeadingVehicle(BasicScenario):
         driving_to_next_intersection.add_child(InTriggerDistanceToNextIntersection(
             self.other_actors[0], self._other_actor_stop_in_front_intersection))
 
-        # stop vehicle
-        stop = StopVehicle(self.other_actors[0], self._other_actor_max_brake)
+        plan = generate_target_waypoint(self._map.get_waypoint(self._other_actor_transform.location), -1)
+        drive_and_turn_at_next_intersection = WaypointFollower(self.other_actors[0], target_speed=25.0, plan=plan)
+
+        #basic = BasicAgentBehavior(self.other_actors[0], target_waypoint.transform.location) #Reach trigger distance to next intersection, then take left turn
 
         # end condition
         endcondition = py_trees.composites.Parallel("Waiting for end position",
@@ -145,8 +149,8 @@ class FollowLeadingVehicle(BasicScenario):
         # Build behavior tree
         sequence = py_trees.composites.Sequence("Sequence Behavior")
         sequence.add_child(start_transform)
-        sequence.add_child(driving_to_next_intersection)
-        sequence.add_child(stop)
+        # sequence.add_child(driving_to_next_intersection)
+        sequence.add_child(drive_and_turn_at_next_intersection)
         sequence.add_child(endcondition)
         sequence.add_child(ActorDestroy(self.other_actors[0]))
 
