@@ -346,21 +346,22 @@ def generate_target_waypoint(waypoint, turn=0):
     """
     sampling_radius = 1
     reached_junction = False
-    wp_list = []
+    plan = [] #List of waypoints for the vehicle to drive
     while True:
 
-        wp_choice = waypoint.next(sampling_radius)
+        next_waypoint_choices = waypoint.next(sampling_radius)
         #   Choose path at intersection
-        if not reached_junction and (len(wp_choice) > 1 or wp_choice[0].is_junction):
+        if not reached_junction and ((len(next_waypoint_choices)>1) or next_waypoint_choices[0].is_junction): # Either I'm right outside junction with multiple paths to take or already inside a junction.
             reached_junction = True
-            waypoint = choose_at_junction(waypoint, wp_choice, turn)
+            waypoint = choose_at_junction(waypoint, next_waypoint_choices, turn)
         else:
-            waypoint = wp_choice[0]
-        wp_list.append(waypoint)
+            waypoint = next_waypoint_choices[0] # If not at the edge or in junction, just move forward.
+        
+        plan.append((waypoint, RoadOption.LANEFOLLOW))
         #   End condition for the behavior
-        if reached_junction and not wp_list[-1].is_junction:
+        if reached_junction and not plan[-1][0].is_junction:
             break
-    return wp_list[-1]
+    return plan
 
 
 def generate_target_waypoint_in_route(waypoint, route):
