@@ -38,7 +38,7 @@ from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (I
 from srunner.scenariomanager.timer import TimeOut
 from srunner.scenarios.basic_scenario import BasicScenario
 from srunner.tools.scenario_helper import get_waypoint_in_distance, generate_target_waypoint, generate_target_waypoint_list 
-
+import srunner.scenarios.behavior_trees as behavior_trees
 
 class FollowLeadingVehicle(BasicScenario):
 
@@ -64,7 +64,7 @@ class FollowLeadingVehicle(BasicScenario):
         self._first_vehicle_speed = 10
         self._reference_waypoint = self._map.get_waypoint(config.trigger_points[0].location)
         self._other_actor_max_brake = 1.0
-        self._other_actor_stop_in_front_intersection = 0
+        self._other_actor_stop_in_front_intersection = 5
         self._other_actor_transform = None
         # Timeout of scenario in seconds
         self.timeout = timeout
@@ -120,18 +120,9 @@ class FollowLeadingVehicle(BasicScenario):
         # reset its pose to the required one
         start_transform = ActorTransformSetter(self.other_actors[0], self._other_actor_transform)
 
-        # let the other actor drive until next intersection
-        # @todo: We should add some feedback mechanism to respond to ego_vehicle behavior
-        driving_to_next_intersection = py_trees.composites.Parallel(
-            "DrivingTowardsIntersection",
-            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
-
-        driving_to_next_intersection.add_child(WaypointFollower(self.other_actors[0], self._first_vehicle_speed))
-        driving_to_next_intersection.add_child(InTriggerDistanceToNextIntersection(
-            self.other_actors[0], self._other_actor_stop_in_front_intersection))
-
-        plan = generate_target_waypoint(self._map.get_waypoint(self._other_actor_transform.location), -1)
-        drive_and_turn_at_next_intersection = WaypointFollower(self.other_actors[0], target_speed=25.0, plan=plan)
+        drive_until_intersection = behavior_trees.DriveToNextIntersection(self.other_actors[0], self._first_vehicle_speed, self._other_actor_stop_in_front_intersection).create_tree()
+        
+        drive_and_turn_at_next_intersection = behavior_trees.DriveAndTurnAtNextIntersection(self.other_actors[0], 10.0, self._other_actor_transform.location, turn='left').create_tree()
 
         #basic = BasicAgentBehavior(self.other_actors[0], target_waypoint.transform.location) #Reach trigger distance to next intersection, then take left turn
 
@@ -149,7 +140,7 @@ class FollowLeadingVehicle(BasicScenario):
         # Build behavior tree
         sequence = py_trees.composites.Sequence("Sequence Behavior")
         sequence.add_child(start_transform)
-        # sequence.add_child(driving_to_next_intersection)
+        # sequence.add_child(drive_until_intersection)
         sequence.add_child(drive_and_turn_at_next_intersection)
         sequence.add_child(endcondition)
         sequence.add_child(ActorDestroy(self.other_actors[0]))
