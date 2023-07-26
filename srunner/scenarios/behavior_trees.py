@@ -52,6 +52,21 @@ class DriveAndTurnAtNextIntersection():
         self.behavior = WaypointFollower(self.vehicle, self.vehicle_speed, plan=plan)
         return self.behavior
     
+class DriveAndSharpStopAtNextIntersection():
+    def __init__(self, vehicle, vehicle_speed, distance_from_intersection):
+        self.vehicle = vehicle
+        self.vehicle_speed = vehicle_speed
+        self.distance_from_intersection = distance_from_intersection
+        self.behavior = None
+    
+    def create_tree(self):
+        drive_until_intersection_subtree = DriveToNextIntersection(self.vehicle, self.vehicle_speed, self.distance_from_intersection).create_tree()
+        self.behavior =  py_trees.composites.Sequence("Sequence Behavior")
+        self.behavior.add_child(drive_until_intersection_subtree)
+        self.behavior.add_child(StopVehicle(self.vehicle, 2.0))
+        return self.behavior
+
+    
     
 
 

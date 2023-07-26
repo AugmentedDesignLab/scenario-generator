@@ -121,7 +121,7 @@ class FollowLeadingVehicle(BasicScenario):
         start_transform = ActorTransformSetter(self.other_actors[0], self._other_actor_transform)
 
         drive_until_intersection = behavior_trees.DriveToNextIntersection(self.other_actors[0], self._first_vehicle_speed, self._other_actor_stop_in_front_intersection).create_tree()
-        
+        drive_and_sharp_stop_at_intersection = behavior_trees.DriveAndSharpStopAtNextIntersection(self.other_actors[0], self._first_vehicle_speed, self._other_actor_stop_in_front_intersection).create_tree()
         drive_and_turn_at_next_intersection = behavior_trees.DriveAndTurnAtNextIntersection(self.other_actors[0], 10.0, self._other_actor_transform.location, turn='left').create_tree()
 
         #basic = BasicAgentBehavior(self.other_actors[0], target_waypoint.transform.location) #Reach trigger distance to next intersection, then take left turn
@@ -142,6 +142,7 @@ class FollowLeadingVehicle(BasicScenario):
         sequence.add_child(start_transform)
         # sequence.add_child(drive_until_intersection)
         sequence.add_child(drive_and_turn_at_next_intersection)
+        #sequence.add_child(drive_and_sharp_stop_at_intersection)
         sequence.add_child(endcondition)
         sequence.add_child(ActorDestroy(self.other_actors[0]))
 
