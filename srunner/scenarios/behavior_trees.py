@@ -6,7 +6,7 @@ import carla
 from agents.navigation.local_planner import RoadOption
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.scenariomanager.scenarioatomics.atomic_behaviors import (ActorTransformSetter,
-                                                                      ActorDestroy,
+                                                                      ActorDestroy, ChangeActorTargetSpeed, HandBrakeVehicle,
                                                                       KeepVelocity,
                                                                       StopVehicle,
                                                                       WaypointFollower,
@@ -66,11 +66,19 @@ class DriveAndSharpStopAtNextIntersection():
         self.behavior.add_child(StopVehicle(self.vehicle, 2.0))
         return self.behavior
 
+class DriveAndSlowDownAtNextIntersection():
+    def __init__(self, vehicle, vehicle_speed, slow_down_speed):
+        self.vehicle = vehicle
+        self.vehicle_speed = vehicle_speed
+        # self.distance_from_intersection = distance_from_intersection
+        self.slow_down_speed = slow_down_speed
+        self.behavior = None
     
-    
-
-
-
-
-
- 
+    # Drive and slow down at intersection and increase velocity again right after
+    def create_tree(self):
+        # drive_until_intersection_subtree = DriveToNextIntersection(self.vehicle, self.vehicle_speed, self.distance_from_intersection).create_tree()
+        self.behavior =  py_trees.composites.Sequence("Sequence Behavior")
+        # self.behavior.add_child(drive_until_intersection_subtree)
+        self.behavior.add_child(KeepVelocity(self.vehicle, self.slow_down_speed, 2.0))
+        self.behavior.add_child(KeepVelocity(self.vehicle, self.vehicle_speed, 2.0))
+        return self.behavior
