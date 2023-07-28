@@ -153,7 +153,7 @@ class VehicleTurningRight(BasicScenario):
 
         # Move a certain distance to the front
         start_distance = 8
-        waypoint = waypoint.next(start_distance)[0]
+        waypoint = waypoint[-1][0].next(start_distance)[0]
 
         # Get the last driving lane to the right
         waypoint, self._num_lane_changes = get_right_driving_lane(waypoint)
@@ -320,7 +320,7 @@ class VehicleTurningLeft(BasicScenario):
 
         # Move a certain distance to the front
         start_distance = 8
-        waypoint = waypoint.next(start_distance)[0]
+        waypoint = waypoint[-1][0].next(start_distance)[0]
 
         # Get the last driving lane to the right
         waypoint, self._num_lane_changes = get_right_driving_lane(waypoint)
