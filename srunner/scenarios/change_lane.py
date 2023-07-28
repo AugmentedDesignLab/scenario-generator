@@ -30,6 +30,7 @@ from srunner.scenariomanager.scenarioatomics.atomic_behaviors import (ActorTrans
 from srunner.scenariomanager.scenarioatomics.atomic_criteria import CollisionTest
 from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import InTriggerDistanceToVehicle, StandStill
 from srunner.scenarios.basic_scenario import BasicScenario
+from srunner.scenarios.behavior_trees import DriveAndSlowDownAtNextIntersection
 from srunner.tools.scenario_helper import get_waypoint_in_distance
 
 
@@ -135,11 +136,16 @@ class ChangeLane(BasicScenario):
         distance_to_vehicle = InTriggerDistanceToVehicle(
             self.other_actors[1], self.other_actors[0], self._trigger_distance)
         just_drive.add_child(distance_to_vehicle)
-        sequence_tesla.add_child(just_drive)
+
+        drive_and_slow_down = DriveAndSlowDownAtNextIntersection(self.other_actors[0], 50, 10).create_tree()
 
         # change lane
-        lane_change_atomic = LaneChange(self.other_actors[0], distance_other_lane=200)
+        lane_change_atomic = LaneChange(self.other_actors[0], distance_other_lane=25, distance_same_lane=1, direction='left')
+        # lane_change_atomic_right = LaneChange(self.other_actors[0], distance_other_lane=20, direction='right')
+
+        sequence_tesla.add_child(just_drive)
         sequence_tesla.add_child(lane_change_atomic)
+        sequence_tesla.add_child(drive_and_slow_down)
         sequence_tesla.add_child(Idle())
 
         # ego vehicle
