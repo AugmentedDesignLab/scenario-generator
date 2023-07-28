@@ -50,7 +50,7 @@ class DriveAndTurnAtNextIntersection():
         elif self.turn=='right': self.turn_value = 1
         plan = generate_target_waypoint(self.map.get_waypoint(self.start_location), self.turn_value)
         self.behavior = WaypointFollower(self.vehicle, self.vehicle_speed, plan=plan)
-        return self.behavior
+        return self.behavior, plan
     
 class DriveAndSharpStopAtNextIntersection():
     def __init__(self, vehicle, vehicle_speed, distance_from_intersection):
@@ -65,7 +65,28 @@ class DriveAndSharpStopAtNextIntersection():
         self.behavior.add_child(drive_until_intersection_subtree)
         self.behavior.add_child(StopVehicle(self.vehicle, 2.0))
         return self.behavior
+    
 
+class DriveAndTurnAtNextIntersectionTwice():
+    def __init__(self, vehicle, vehicle_speed, start_location, turn_1='left', turn_2='left'):
+        self.vehicle = vehicle
+        self.vehicle_speed = vehicle_speed
+        self.start_location = start_location
+        self.turn_1 = turn_1
+        self.turn_2 = turn_2
+        self.map = CarlaDataProvider.get_map()
+        self.turn_value_1 = -1 #Default to left turn
+        self.turn_value_2 = -1
+        self.behavior = None
+
+    def create_tree(self):
+        seq = py_trees.composites.Sequence("Sequence Behavior")
+        behavior_tree_first_turn, plan = DriveAndTurnAtNextIntersection(self.vehicle, self.vehicle_speed, self.start_location, self.turn_1).create_tree()
+        behavior_tree_second_turn, plan = DriveAndTurnAtNextIntersection(self.vehicle, self.vehicle_speed, plan[-1][0].transform.location, self.turn_2).create_tree()
+        seq.add_child(behavior_tree_first_turn)
+        seq.add_child(behavior_tree_second_turn)
+        return seq
+    
 class DriveAndSlowDownAtNextIntersection():
     def __init__(self, vehicle, vehicle_speed, slow_down_speed):
         self.vehicle = vehicle
